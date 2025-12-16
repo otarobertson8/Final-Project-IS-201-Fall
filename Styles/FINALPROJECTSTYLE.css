@@ -1,0 +1,62 @@
+h1{
+
+    font-size: 55px;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+}
+
+h2{
+
+    font-size: 30px;
+    text-align: center;
+    background-color: black;
+    color: white;
+    padding: 7;
+    max-width: 550px;
+    border-radius: 10px
+}
+
+.proinformation{
+    background-color: black;
+    color: white;
+}
+
+.footer1 {
+    position: fixed;      /* makes header stay in place */
+    top: 0;               /* sticks to top of page */
+    left: 0;
+    width: 100%;          /* full width */
+    background-color: #4CAF50;
+    color: white;
+    padding: 0;
+    z-index: 1000;        /* keeps it above other content */
+  }
+
+  body {
+    margin: 17px;
+    padding-top: 150px; 
+    background-color: white;
+    color: black;  /* prevents your content from hiding under the header */
+  }
+
+  .headerpro {
+
+    position:fixed;
+    top:0;
+    left: 0;
+    width: 100%;
+    background-color: rgb(225, 208, 27);
+    color: black;
+    padding: 0;
+
+  }
+
+  h3 { 
+     font-size: 20px;
+     font-weight: 200;
+     background-color: rgb(62, 62, 213);
+    padding: 7;
+
+
+  }

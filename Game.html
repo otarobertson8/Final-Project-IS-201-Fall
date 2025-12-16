@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Play Sudoku</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom right, #ffecb3, #ffccff);
+    padding: 20px;
+  }
+  h1 {
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ff4081;
+    text-shadow: 2px 2px #fff;
+  }
+  #timer {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #3f51b5;
+    font-weight: bold;
+  }
+  table {
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  td {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 24px;
+    cursor: pointer;
+    background-color: #ffffff;
+    border: 2px solid #999;
+    transition: background-color 0.3s;
+  }
+  td.prefilled {
+    background-color: #ffe082;
+    font-weight: bold;
+    cursor: default;
+  }
+  td.conflict {
+    background-color: #ff8a80 !important;
+  }
+  input {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    border: none;
+    font-size: 24px;
+    background: transparent;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  /* Bold borders for 3x3 boxes */
+  td.block-right { border-right: 4px solid #000; }
+  td.block-bottom { border-bottom: 4px solid #000; }
+  td.block-left { border-left: 4px solid #000; }
+  td.block-top { border-top: 4px solid #000; }
+  button {
+    font-size: 20px;
+    padding: 10px 20px;
+    background-color: #ff4081;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  button:hover {
+    transform: scale(1.05);
+  }
+</style>
+</head>
+<body>
+
+<h1>PLAY SUDOKU</h1>
+<div id="timer">Time: 0s</div>
+
+<table id="sudoku"></table>
+
+<button id="resetBtn">Reset Sudoku</button>
+
+<script>
+// Puzzle template (0 = empty)
+const puzzleTemplate = [
+  [5,3,0,0,7,0,0,0,0],
+  [6,0,0,1,9,5,0,0,0],
+  [0,9,8,0,0,0,0,6,0],
+  [8,0,0,0,6,0,0,0,3],
+  [4,0,0,8,0,3,0,0,1],
+  [7,0,0,0,2,0,0,0,6],
+  [0,6,0,0,0,0,2,8,0],
+  [0,0,0,4,1,9,0,0,5],
+  [0,0,0,0,8,0,0,7,9]
+];
+
+let puzzle = [];
+let timer = 0;
+let interval;
+
+const table = document.getElementById('sudoku');
+const timerDisplay = document.getElementById('timer');
+const resetBtn = document.getElementById('resetBtn');
+
+// Initialize puzzle
+function initPuzzle() {
+  clearInterval(interval);
+  timer = 0;
+  timerDisplay.textContent = "Time: 0s";
+  interval = setInterval(() => {
+    timer++;
+    timerDisplay.textContent = `Time: ${timer}s`;
+  }, 1000);
+
+  puzzle = puzzleTemplate.map(row => row.slice());
+  table.innerHTML = "";
+
+  for(let i=0;i<9;i++){
+    const row = table.insertRow();
+    for(let j=0;j<9;j++){
+      const cell = row.insertCell();
+      
+      // Add bold borders for 3x3 boxes
+      if(j===0) cell.classList.add('block-left');
+      if(j===8) cell.classList.add('block-right');
+      if(i===0) cell.classList.add('block-top');
+      if(i===8) cell.classList.add('block-bottom');
+      if((j+1)%3===0 && j!==8) cell.classList.add('block-right');
+      if((i+1)%3===0 && i!==8) cell.classList.add('block-bottom');
+
+      if(puzzle[i][j] !== 0){
+        cell.textContent = puzzle[i][j];
+        cell.classList.add('prefilled');
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 1;
+        input.addEventListener('input', function(){
+          if(!/^[1-9]$/.test(this.value)) this.value = '';
+          checkConflicts();
+          checkWin();
+        });
+        cell.appendChild(input);
+      }
+    }
+  }
+}
+
+// Check for conflicts
+function checkConflicts(){
+  table.querySelectorAll('td').forEach(td => td.classList.remove('conflict'));
+
+  const grid = [];
+  for(let i=0;i<9;i++){
+    grid[i] = [];
+    for(let j=0;j<9;j++){
+      const cell = table.rows[i].cells[j];
+      grid[i][j] = cell.classList.contains('prefilled') ? Number(cell.textContent) : Number(cell.querySelector('input')?.value || 0);
+    }
+  }
+
+  for(let i=0;i<9;i++){
+    const rowCount = {};
+    const colCount = {};
+    for(let j=0;j<9;j++){
+      if(grid[i][j]!==0){
+        if(rowCount[grid[i][j]]!==undefined){
+          highlightCell(i,j);
+          highlightCell(i,rowCount[grid[i][j]]);
+        } else rowCount[grid[i][j]]=j;
+      }
+      if(grid[j][i]!==0){
+        if(colCount[grid[j][i]]!==undefined){
+          highlightCell(j,i);
+          highlightCell(colCount[grid[j][i]],i);
+        } else colCount[grid[j][i]]=j;
+      }
+    }
+  }
+
+  // 3x3 blocks
+  for(let blockRow=0; blockRow<3; blockRow++){
+    for(let blockCol=0; blockCol<3; blockCol++){
+      const nums = {};
+      for(let i=0;i<3;i++){
+        for(let j=0;j<3;j++){
+          const r = blockRow*3 + i;
+          const c = blockCol*3 + j;
+          const val = grid[r][c];
+          if(val!==0){
+            if(nums[val]){
+              highlightCell(r,c);
+              highlightCell(nums[val][0], nums[val][1]);
+            } else nums[val]=[r,c];
+          }
+        }
+      }
+    }
+  }
+}
+
+function highlightCell(i,j){
+  const cell = table.rows[i].cells[j];
+  cell.classList.add('conflict');
+}
+
+// Check if puzzle is solved
+function checkWin(){
+  const grid = [];
+  for(let i=0;i<9;i++){
+    grid[i]=[];
+    for(let j=0;j<9;j++){
+      const cell = table.rows[i].cells[j];
+      grid[i][j]=cell.classList.contains('prefilled') ? Number(cell.textContent) : Number(cell.querySelector('input')?.value || 0);
+      if(grid[i][j]===0) return; // incomplete
+    }
+  }
+  
+  // Simple validation: no conflicts
+  const conflicts = table.querySelectorAll('.conflict');
+  if(conflicts.length===0){
+    clearInterval(interval);
+    alert(`Congratulations! You solved it in ${timer} seconds!`);
+  }
+}
+
+// Reset button
+resetBtn.addEventListener('click', initPuzzle);
+
+initPuzzle();
+</script> <a href = "index.html">Back to Pickleball</a>
+</body>
+</html>
